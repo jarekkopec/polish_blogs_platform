@@ -1,0 +1,5 @@
+sites:
+  - url: "https://kopecpatrzy.pl/feed/"
+    title: "Kopeć patrzy na rzeczy"
+  - url: "https://blog.humanistyka.dev/feed/rss"
+    title: "hum/dev"
