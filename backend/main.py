@@ -1,12 +1,16 @@
 import datetime
 from pathlib import Path
 import csv
+import shutil
 
+import pandas as pd
 import yaml
 import feedparser
 # import sqlite3
 
-
+db_all = Path(__file__).resolve().parent / 'blogs.csv'
+db_dedupl = Path(__file__).resolve().parent / 'deduplicated.csv'
+served = Path('/var/www/html/data/serve.csv')
 
 def read_sites():
     sites_path = Path(__file__).resolve().parent / 'sites.yml'
@@ -43,11 +47,26 @@ def parse_site(url):
 
 
 def write_db(content):
-    db_path = Path(__file__).resolve().parent / 'blogs.csv'
-    with open(db_path, 'a', newline='', encoding='utf-8') as file:
+    
+    with open(db_all, 'a', newline='', encoding='utf-8') as file:
         writer = csv.DictWriter(file, fieldnames=[
             "site_title", "site_link", "title", "date", "summary"])
         writer.writerows(content)
+
+def prune_duplicates():
+    src = pd.read_csv(db_all)
+    
+    src = src.drop_duplicates()
+    
+    src.to_csv(db_all, index=False)
+    src.to_csv(db_dedupl)
+
+def move_to_serve():
+    src = db_dedupl
+    dst = served
+    shutil.copy(src, dst)
+
+
 
     # db_path = Path(__file__).resolve().parent / 'blogs.db'
     # conn = sqlite3.connect(db_path)
@@ -73,6 +92,8 @@ def main():
     sites = read_sites()["sites"]
     for s in sites:
         write_db(parse_site(s.get('url')))
+    prune_duplicates()
+    # move_to_serve()
 
 
 
