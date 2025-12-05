@@ -93,7 +93,7 @@ def main():
     for s in sites:
         write_db(parse_site(s.get('url')))
     prune_duplicates()
-    # move_to_serve()
+    move_to_serve()
 
 
 
