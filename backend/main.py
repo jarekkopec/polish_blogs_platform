@@ -2,15 +2,21 @@ import datetime
 from pathlib import Path
 import csv
 import shutil
+import html
 
 import pandas as pd
 import yaml
 import feedparser
-# import sqlite3
+from yattag import Doc
 
-db_all = Path(__file__).resolve().parent / 'blogs.csv'
-db_dedupl = Path(__file__).resolve().parent / 'deduplicated.csv'
-served = Path('/var/www/html/data/serve.csv')
+
+
+local_html = Path(__file__).resolve().parent / 'index.html'
+served_html = Path('/var/www/html/index.html')
+
+def clean_string(string):
+    fixed = html.unescape(string)
+    return(fixed)
 
 def read_sites():
     sites_path = Path(__file__).resolve().parent / 'sites.yml'
@@ -22,7 +28,7 @@ def parse_site(url):
     posts = []
     feed = feedparser.parse(url)
 
-    site_title = feed.feed.title
+    site_title = clean_string(feed.feed.title)
     site_link = feed.feed.link
     
     entries = feed["entries"]
@@ -32,12 +38,14 @@ def parse_site(url):
         date_string = date_object.strftime('%d-%m-%Y %H:%M:%S')
         
         post_date = date_string
-        post_title = el.title
-        post_summary = el.summary
+        post_title = clean_string(el.title)
+        post_summary = clean_string(el.summary)
+        post_link = el.link
 
         posts.append({
             "site_title": site_title,
             "site_link": site_link,
+            "post_link": post_link,
             "title": post_title,
             "date": post_date,
             "summary": post_summary
@@ -45,55 +53,52 @@ def parse_site(url):
     
     return posts
 
-
-def write_db(content):
+def compose(sites_content):
     
-    with open(db_all, 'a', newline='', encoding='utf-8') as file:
-        writer = csv.DictWriter(file, fieldnames=[
-            "site_title", "site_link", "title", "date", "summary"])
-        writer.writerows(content)
-
-def prune_duplicates():
-    src = pd.read_csv(db_all)
+    df = pd.DataFrame(sites_content)
+    df["date"] = pd.to_datetime(df["date"], format='%d-%m-%Y %H:%M:%S')
+    df = df.sort_values(by="date", ascending=False)
     
-    src = src.drop_duplicates()
-    
-    src.to_csv(db_all, index=False)
-    src.to_csv(db_dedupl)
+    return df.to_dict(orient="records")
 
-def move_to_serve():
-    src = db_dedupl
-    dst = served
+def render(content):
+    doc, tag, text = Doc().tagtext()
+    with tag('html'):
+        with tag('body'):
+            with tag('table'):
+                for el in content:
+                    with tag("tr"):
+                        with tag("td"):
+                            with tag("a", href = el["site_link"]):
+                                text(el["site_title"])
+                        with tag("td"):
+                            with tag("a", href = el["post_link"]):
+                                text(el["title"])
+                        with tag("td"):
+                            text(el["summary"][:100] + "...")
+
+
+    with open(local_html, "w") as file:
+        file.write(doc.getvalue())
+
+def push():
+    src = local_html
+    dst = served_html
     shutil.copy(src, dst)
-
-
-
-    # db_path = Path(__file__).resolve().parent / 'blogs.db'
-    # conn = sqlite3.connect(db_path)
-    # for c in content:
-    #     cursor = conn.cursor()
-    #     cursor.execute('''
-    #         CREATE TABLE IF NOT EXISTS posts (
-    #             id INTEGER PRIMARY KEY AUTOINCREMENT,
-    #             title TEXT,
-    #             date TEXT,
-    #             summary TEXT
-    #         )
-    #     ''')
-    #     cursor.execute(
-    #         'INSERT INTO posts (title, date, summary) VALUES (?, ?, ?)',
-    #         (c.get('title'), c.get('date'), c.get('summary'))
-    #     )
-    #     conn.commit()
-    # conn.close()
 
 
 def main():
     sites = read_sites()["sites"]
+    sites_content = []
     for s in sites:
-        write_db(parse_site(s.get('url')))
-    prune_duplicates()
-    move_to_serve()
+        try:
+            site_content = parse_site(s.get("url"))
+            sites_content += site_content
+        except:
+            continue
+    c = compose(sites_content)
+    render(c)
+    push()
 
 
 
