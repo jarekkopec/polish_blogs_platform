@@ -11,16 +11,16 @@ from yattag import Doc
 
 
 
-local_html = Path(__file__).resolve().parent / 'index.html'
-served_html = Path('/var/www/html/index.html')
+local_html = Path(__file__).resolve().parent / "index.html"
+served_html = Path("/var/www/html/index.html")
 
 def clean_string(string):
     fixed = html.unescape(string)
     return(fixed)
 
 def read_sites():
-    sites_path = Path(__file__).resolve().parent / 'sites.yml'
-    with open(sites_path, 'r', encoding='utf-8') as file:
+    sites_path = Path(__file__).resolve().parent / "sites.yml"
+    with open(sites_path, "r", encoding="utf-8") as file:
         sites = yaml.safe_load(file)
     return sites
 
@@ -35,7 +35,7 @@ def parse_site(url):
     
     for el in entries:
         date_object = datetime.datetime(*el.published_parsed[0:6])
-        date_string = date_object.strftime('%d-%m-%Y %H:%M:%S')
+        date_string = date_object.strftime("%d-%m-%Y %H:%M:%S")
         
         post_date = date_string
         post_title = clean_string(el.title)
@@ -56,16 +56,23 @@ def parse_site(url):
 def compose(sites_content):
     
     df = pd.DataFrame(sites_content)
-    df["date"] = pd.to_datetime(df["date"], format='%d-%m-%Y %H:%M:%S')
+    df["date"] = pd.to_datetime(df["date"], format="%d-%m-%Y %H:%M:%S")
     df = df.sort_values(by="date", ascending=False)
     
     return df.to_dict(orient="records")
 
 def render(content):
     doc, tag, text = Doc().tagtext()
-    with tag('html'):
-        with tag('body'):
-            with tag('table'):
+
+    doc.asis("<!DOCTYPE html>")
+    with tag("html"):
+        with tag("head"):
+            doc.stag("meta", charset = "utf-8")
+            doc.stag("meta",
+                     name="viewport",
+                     content="width=device-width, initial-scale=1.0")
+        with tag("body"):
+            with tag("table"):
                 for el in content:
                     with tag("tr"):
                         with tag("td"):
@@ -79,7 +86,8 @@ def render(content):
 
 
     with open(local_html, "w") as file:
-        file.write(doc.getvalue())
+        content = doc.getvalue()
+        file.write(content)
 
 def push():
     src = local_html
@@ -102,5 +110,5 @@ def main():
 
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
