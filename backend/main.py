@@ -59,7 +59,15 @@ def compose(sites_content):
     df["date"] = pd.to_datetime(df["date"], format="%d-%m-%Y %H:%M:%S")
     df = df.sort_values(by="date", ascending=False)
     
-    return df.to_dict(orient="records")
+    grouped = df.groupby('site_title')
+    result = []
+    for site_title, group in grouped:
+        result.append({
+            'site_title': site_title,
+            'site_link': group.iloc[0]['site_link'],
+            'posts': group[['post_link', 'title', 'date', 'summary']].to_dict(orient='records')
+        })
+    return result
 
 def render(content):
     doc, tag, text = Doc().tagtext()
@@ -71,18 +79,23 @@ def render(content):
             doc.stag("meta",
                      name="viewport",
                      content="width=device-width, initial-scale=1.0")
+            doc.stag("link", rel="stylesheet", href="style.css")
         with tag("body"):
-            with tag("table"):
-                for el in content:
-                    with tag("tr"):
-                        with tag("td"):
-                            with tag("a", href = el["site_link"]):
-                                text(el["site_title"])
-                        with tag("td"):
-                            with tag("a", href = el["post_link"]):
-                                text(el["title"])
-                        with tag("td"):
-                            text(el["summary"][:100] + "...")
+            with tag("header"):
+                with tag("h1", id = "site_name"):
+                    text("Polskie blogi")
+                with tag("content"):
+                    for blog in content:
+                        with tag("div"):
+                            with tag("h2"):
+                                text(blog["site_title"])
+                            with tag("ul"):
+                                for post in blog["posts"]:
+                                    with tag("li"):
+                                        with tag("a", href=post["post_link"]):
+                                            text(post["title"])
+            with tag("footer"):
+                text("Meta info o stronie")
 
 
     with open(local_html, "w") as file:
