@@ -33,7 +33,7 @@ def parse_site(url):
     
     entries = feed["entries"]
     
-    for el in entries:
+    for el in entries[:10]:
         date_object = datetime.datetime(*el.published_parsed[0:6])
         date_string = date_object.strftime("%d-%m-%Y %H:%M:%S")
         
