@@ -8,10 +8,11 @@ import pandas as pd
 import yaml
 import feedparser
 from yattag import Doc
+import pytz
 
 
 
-local_html = Path(__file__).resolve().parent / "index.html"
+local_html = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
 served_html = Path("/var/www/html/index.html")
 
 def clean_string(string):
@@ -79,23 +80,32 @@ def render(content):
             doc.stag("meta",
                      name="viewport",
                      content="width=device-width, initial-scale=1.0")
-            doc.stag("link", rel="stylesheet", href="style.css")
+            doc.stag("link", rel="stylesheet", href="assets/style.css")
+            with tag("script",
+                     src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"):
+                text("")
+            with tag("script", src="assets/scripts.js"):
+                text("")
         with tag("body"):
             with tag("header"):
                 with tag("h1", id = "site_name"):
                     text("Polskie blogi")
-                with tag("content"):
-                    for blog in content:
-                        with tag("div"):
-                            with tag("h2"):
-                                text(blog["site_title"])
-                            with tag("ul"):
-                                for post in blog["posts"]:
-                                    with tag("li"):
-                                        with tag("a", href=post["post_link"]):
-                                            text(post["title"])
+            with tag("content"):
+                for i, blog in enumerate(content):
+                    with tag("div", id="blog-" + str(i+1)):
+                        with tag("h2"):
+                            text(blog["site_title"])
+                        with tag("ul"):
+                            for post in blog["posts"]:
+                                with tag("li"):
+                                    with tag("a", href=post["post_link"]):
+                                        text(post["title"])
             with tag("footer"):
-                text("Meta info o stronie")
+                utc_now = datetime.datetime.now(pytz.utc)
+                warsaw_tz = pytz.timezone("Europe/Warsaw")
+                warsaw_time = utc_now.astimezone(warsaw_tz)
+                warsaw_time_string = warsaw_time.strftime('%Y-%m-%d %H:%M:%S')
+                text(f"Ostatnia aktualizacja: {warsaw_time_string}")
 
 
     with open(local_html, "w") as file:
