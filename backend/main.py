@@ -1,6 +1,5 @@
 import datetime
 from pathlib import Path
-import csv
 import shutil
 import html
 
@@ -11,13 +10,14 @@ from yattag import Doc
 import pytz
 
 
-
 local_html = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
 served_html = Path("/var/www/html/index.html")
 
+
 def clean_string(string):
     fixed = html.unescape(string)
-    return(fixed)
+    return (fixed)
+
 
 def read_sites():
     sites_path = Path(__file__).resolve().parent / "sites.yml"
@@ -25,19 +25,20 @@ def read_sites():
         sites = yaml.safe_load(file)
     return sites
 
+
 def parse_site(url):
     posts = []
     feed = feedparser.parse(url)
 
     site_title = clean_string(feed.feed.title)
     site_link = feed.feed.link
-    
+
     entries = feed["entries"]
-    
+
     for el in entries[:10]:
         date_object = datetime.datetime(*el.published_parsed[0:6])
         date_string = date_object.strftime("%d-%m-%Y %H:%M:%S")
-        
+
         post_date = date_string
         post_title = clean_string(el.title)
         post_summary = clean_string(el.summary)
@@ -51,15 +52,16 @@ def parse_site(url):
             "date": post_date,
             "summary": post_summary
         })
-    
+
     return posts
 
+
 def compose(sites_content):
-    
+
     df = pd.DataFrame(sites_content)
     df["date"] = pd.to_datetime(df["date"], format="%d-%m-%Y %H:%M:%S")
     df = df.sort_values(by="date", ascending=False)
-    
+
     grouped = df.groupby('site_title')
     result = []
     for site_title, group in grouped:
@@ -70,13 +72,14 @@ def compose(sites_content):
         })
     return result
 
+
 def render(content):
     doc, tag, text = Doc().tagtext()
 
     doc.asis("<!DOCTYPE html>")
     with tag("html"):
         with tag("head"):
-            doc.stag("meta", charset = "utf-8")
+            doc.stag("meta", charset="utf-8")
             doc.stag("meta",
                      name="viewport",
                      content="width=device-width, initial-scale=1.0")
@@ -88,8 +91,13 @@ def render(content):
                 text("")
         with tag("body"):
             with tag("header"):
-                with tag("h1", id = "site_name"):
-                    text("Polskie blogi")
+                with tag("h1"):
+                    with tag("a", href="https://blogi.bieda.it"):
+                        text("Polskie blogi")
+                    text(" | ")
+                    with tag("a", href="info.html"):
+                        text("info")
+
             with tag("content"):
                 for i, blog in enumerate(content):
                     with tag("div", id="blog-" + str(i+1)):
@@ -107,10 +115,10 @@ def render(content):
                 warsaw_time_string = warsaw_time.strftime('%Y-%m-%d %H:%M:%S')
                 text(f"Ostatnia aktualizacja: {warsaw_time_string}")
 
-
     with open(local_html, "w") as file:
         content = doc.getvalue()
         file.write(content)
+
 
 def push():
     src = local_html
@@ -129,8 +137,7 @@ def main():
             continue
     c = compose(sites_content)
     render(c)
-    push()
-
+    # push()
 
 
 if __name__ == "__main__":
