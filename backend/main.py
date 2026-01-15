@@ -13,11 +13,15 @@ import pytz
 local_html = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
 served_html = Path("/var/www/html/index.html")
 
+def get_config():
+    sites_path = Path(__file__).resolve().parent / "config.yml"
+    with open(sites_path, "r", encoding="utf-8") as file:
+        config = yaml.safe_load(file)
+    return config
 
 def clean_string(string):
     fixed = html.unescape(string)
     return (fixed)
-
 
 def read_sites():
     sites_path = Path(__file__).resolve().parent / "sites.yml"
@@ -74,6 +78,11 @@ def compose(sites_content):
 
 
 def render(content):
+    if config["is_update_CSS"]:
+        now = datetime.datetime.now()
+        timestamp = str(int(now.timestamp()))
+        style_file_name = f"style.css?version={timestamp}.css"
+
     doc, tag, text = Doc().tagtext()
 
     doc.asis("<!DOCTYPE html>")
@@ -83,7 +92,7 @@ def render(content):
             doc.stag("meta",
                      name="viewport",
                      content="width=device-width, initial-scale=1.0")
-            doc.stag("link", rel="stylesheet", href="assets/style.css")
+            doc.stag("link", rel="stylesheet", href=f"assets/{style_file_name}")
             with tag("script",
                      src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"):
                 text("")
@@ -94,10 +103,15 @@ def render(content):
                 with tag("h1"):
                     with tag("a", href="https://blogi.bieda.it"):
                         text("Polskie blogi")
-                    text(" | ")
+                        text(" | ")
                     with tag("a", href="info.html"):
-                        text("info")
-
+                        text(" info")
+                with tag("div", klass="lock"):
+                    with tag("label", klass="lock-checkbox"):
+                        doc.asis('<input name="checkbox-lock" type="checkbox" checked>')
+                        with tag("span", klass="icon"):
+                            text("")
+                
             with tag("content"):
                 for i, blog in enumerate(content):
                     with tag("div", id="blog-" + str(i+1)):
@@ -114,18 +128,23 @@ def render(content):
                 warsaw_time = utc_now.astimezone(warsaw_tz)
                 warsaw_time_string = warsaw_time.strftime('%Y-%m-%d %H:%M:%S')
                 text(f"Ostatnia aktualizacja: {warsaw_time_string}")
+            with tag("div", id="lock-notification"):
+                text("")
 
     with open(local_html, "w") as file:
         content = doc.getvalue()
         file.write(content)
-
 
 def push():
     src = local_html
     dst = served_html
     shutil.copy(src, dst)
 
-
+    if config["is_update_CSS"]:
+        src = Path(__file__).resolve().parent.parent / "frontend" / "assets"
+        dst = Path("/var/www/html/assets")
+        shutil.copytree(src, dst, dirs_exist_ok=True)
+    
 def main():
     sites = read_sites()["sites"]
     sites_content = []
@@ -137,8 +156,10 @@ def main():
             continue
     c = compose(sites_content)
     render(c)
-    push()
+    if config["is_push"]:
+        push()
 
 
 if __name__ == "__main__":
+    config = get_config()
     main()
