@@ -82,6 +82,7 @@ def render(content):
         now = datetime.datetime.now()
         timestamp = str(int(now.timestamp()))
         style_file_name = f"style.css?version={timestamp}"
+        scripts_file_name = f"scripts.js?version={timestamp}"
 
     doc, tag, text = Doc().tagtext()
 
@@ -96,7 +97,7 @@ def render(content):
             with tag("script",
                      src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"):
                 text("")
-            with tag("script", src="assets/scripts.js"):
+            with tag("script", src=f"assets/scripts.js?version={scripts_file_name}"):
                 text("")
         with tag("body"):
             with tag("header"):
