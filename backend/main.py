@@ -137,7 +137,7 @@ def main():
             continue
     c = compose(sites_content)
     render(c)
-    # push()
+    push()
 
 
 if __name__ == "__main__":
