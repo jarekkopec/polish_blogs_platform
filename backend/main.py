@@ -81,7 +81,7 @@ def render(content):
     if config["is_update_CSS"]:
         now = datetime.datetime.now()
         timestamp = str(int(now.timestamp()))
-        style_file_name = f"style.css?version={timestamp}.css"
+        style_file_name = f"style.css?version={timestamp}"
 
     doc, tag, text = Doc().tagtext()
 
