@@ -78,6 +78,10 @@ def compose(sites_content):
 
 
 def render(content):
+    
+    style_file_name = "style.css"
+    scripts_file_name = "scripts.js"
+    
     if config["is_update_CSS"]:
         now = datetime.datetime.now()
         timestamp = str(int(now.timestamp()))
