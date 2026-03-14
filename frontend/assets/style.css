@@ -27,6 +27,7 @@ content {
 
 content h2 {
     font-family: 'Courier New', Courier, monospace;
+    text-align: left;
     cursor: move;
     border-bottom: 1px solid #000;
     padding-bottom: 0.5rem;

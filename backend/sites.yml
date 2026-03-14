@@ -7,3 +7,5 @@ sites:
     title: "Ekskursje w dyskursie"
   - url: "https://orynski.eu/pl/feed/"
     title: "orynski.eu"
+  - url: "https://konradhildebrand.pl/category/blog/feed"
+    title: "Notatnik"
