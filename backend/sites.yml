@@ -9,3 +9,5 @@ sites:
     title: "orynski.eu"
   - url: "https://konradhildebrand.pl/category/blog/feed"
     title: "Notatnik"
+  - url: "https://szczurzy-gaming.pl/feed"
+    title: "Szczurzy gaming"
